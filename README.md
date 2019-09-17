@@ -306,3 +306,94 @@ public class ExceptionHandle {
     }
 }
 ```
+
+#### aspect/HttpAspect.java Aspect注解实现切面编程
+1.`@Aspect`,`@Component`  
+首先定义一个切面类，加上@Component  @Aspect这两个注解  
+```java
+@Aspect
+@Component
+public class HttpAspect {
+    
+}
+```
+2.`@Pointcut`  
+定义切点
+```java
+
+    private static final String POINT_CUT = "execution(public * cn.lovingliu.girl.controller.GirlController.*(..))";
+    /**
+     * @Desc 2.定义切点
+     * @Author LovingLiu
+    */
+    @Pointcut(POINT_CUT)    //Pointcut表示式
+    public void log(){ //Point签名(空方法)
+    }
+```
+3.`@After`等
+配置增强  
+   @Before  在切点方法之前执行  
+   @After  在切点方法之后执行  
+   @AfterReturning 切点方法返回后执行
+```java
+    @Before("log()") //指定签名
+    public void logBefore(JoinPoint joinPoint){
+        ServletRequestAttributes attributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = attributes.getRequest();
+        //url
+        logger.info("url={}",request.getRequestURL());
+        //method
+        logger.info("method={}",request.getMethod());
+        //ip
+        logger.info("ip={}",request.getRemoteAddr());
+        //类方法
+        logger.info("class_method",joinPoint.getSignature().getDeclaringTypeName()+"."+joinPoint.getSignature().getName());
+        //参数
+        logger.info("args={}",joinPoint.getArgs());
+    }
+
+    @After("log()")
+    public void logAfter(){
+        logger.info("======");
+    }
+    /**
+     * @Desc returning 是切点的返回值 注意:返回的结果如果null  对其操作会报错哦
+     * @Author LovingLiu
+    */
+    @AfterReturning(returning = "object",pointcut = "log()")
+    public void doAfterReturning(Object object){
+        logger.info("response={}",object);
+    }
+```
+
+#### @ExceptionHandler 和 @ControllerAdvice
+`应用场景`:事务配置在 Service层，当数据库操作失败时让Service层抛出运行时异常，Spring事物管理器就会进行回滚。  
+如此一来，我们的Controller层就不得不进行try-catch Service层的异常，否则会返回一些不友好的错误信息到客户端。  
+但是，Controller层每个方法体都写一些模板化的try-catch的代码，很难看也难维护，特别是还需要对Service层的不同异常进行不同处理的时候。
+
+1.`@ExceptionHandler`  
+`@ExceptionHandler` 是Controller层面上异常处理
+如下TestController发生的任何RuntimeException异常，都将被resolve方法捕获.  
+注意事项: 1. 一个Controller下多个@ExceptionHandler上的异常类型不能出现一样的，否则运行时抛异常.
+```java
+@Controller
+@RequestMapping("/testController")
+public class TestController {
+ 
+    @RequestMapping("/demo1")
+    @ResponseBody
+    public Object demo1(){
+        int i = 1 / 0;
+        return new Date();
+    }
+ 
+    @ExceptionHandler({RuntimeException.class})
+    public ServerResponse resolve(Exception e){
+        return ServerReponse.createByErroeMessage(e.getMessage());
+    }
+}
+```
+2.@ControllerAdvice  
+    实际上controller的一个辅助类，最常用的就是作为全局异常处理的切面
+    可以指定扫描的范围
+    

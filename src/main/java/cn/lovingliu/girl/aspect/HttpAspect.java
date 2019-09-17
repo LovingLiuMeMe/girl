@@ -20,11 +20,12 @@ import javax.servlet.http.HttpServletRequest;
 public class HttpAspect {
     private static final Logger logger = LoggerFactory.getLogger(HttpAspect.class);
 
+    private static final String POINT_CUT = "execution(public * cn.lovingliu.girl.controller.GirlController.*(..))";
     /**
      * @Desc 2.定义切点
      * @Author LovingLiu
     */
-    @Pointcut("execution(public * cn.lovingliu.girl.controller.GirlController.*(..))")
+    @Pointcut(POINT_CUT)
     public void log(){
     }
 
