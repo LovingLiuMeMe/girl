@@ -197,7 +197,7 @@ public class HttpAspect {
     }
 }
 ```
-### 统一异常处理
+### 4.统一异常处理
 需求:根据年龄 判断妹子读书的阶段。
 1.controller
 ```java
@@ -230,6 +230,78 @@ public class ExceptionHandle {
     @ExceptionHandler(value = Exception.class)
     @ResponseBody
     public ServerResponse exceptionResolve(Exception e){
+        return ServerResponse.createByErrorMessage(e.getMessage());
+    }
+}
+```
+### 5.编写项目专属统一异常处理类
+1.GirlException
+```java
+package cn.lovingliu.girl.exception;
+
+/**
+ * @Author：LovingLiu
+ * @Description: Girl项目的统一异常处理
+ * @Date：Created in 2019-09-17
+ */
+public class GirlException extends RuntimeException {
+    /**
+     * @Desc 为什么要继承RuntimeException 而不继承Exception呢 因为Spring只会对RuntimeException 进行事务回滚
+     * @Author LovingLiu
+    */
+
+    private Integer code;
+
+    public GirlException(Integer code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
+    }
+}
+
+```
+2.GirlService
+```java
+    public void getAgeRole(Integer id) throws GirlException{
+        Optional<Girl> optional = girlRepository.findById(id);
+        Girl girl = optional.orElse(null);
+        Integer age = girl.getAge();
+        if(age < 10){
+            //return ServerResponse.createBySuccessMessage("你可能上小学");
+            throw new GirlException(ResponseCode.ERROR.getCode(),"你可能上小学");
+        }else if(age > 10 && age < 16){
+            throw new GirlException(ResponseCode.ERROR.getCode(),"你可能上初中");
+        }else{
+            throw new GirlException(ResponseCode.ERROR.getCode(),"你可能是个社会人");
+        }
+    }
+```
+3.GirlController
+```java
+    @GetMapping("/girls/getAge/{id}")
+    public void getAge(@PathVariable("id") Integer id) throws GirlException {
+        girlService.getAgeRole(id);
+    }
+```
+4.ExceptionHandle
+```java
+@ControllerAdvice
+public class ExceptionHandle {
+
+    @ExceptionHandler(value = GirlException.class)
+    @ResponseBody
+    public ServerResponse exceptionResolve(Exception e){
+        if(e instanceof GirlException){
+            GirlException girlException = (GirlException) e;
+            return ServerResponse.createByErrorCodeMessage(girlException.getCode(),girlException.getMessage());
+        }
         return ServerResponse.createByErrorMessage(e.getMessage());
     }
 }
