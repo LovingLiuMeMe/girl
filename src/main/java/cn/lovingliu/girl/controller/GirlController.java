@@ -6,6 +6,9 @@ import cn.lovingliu.girl.domain.Girl;
 import cn.lovingliu.girl.exception.GirlException;
 import cn.lovingliu.girl.repository.GirlRepository;
 import cn.lovingliu.girl.service.GirlService;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -26,25 +29,19 @@ public class GirlController {
     @Autowired
     private GirlService girlService;
 
-    /**
-     * 查询所有女生列表
-     * @return
-     */
+    @ApiOperation(value = "获取女生列表",notes = "")
     @GetMapping(value = "/girls")
     public List<Girl> girlList() {
         return girlRepository.findAll();
     }
 
-    /**
-     * @Desc 添加一个女生
-     * @Author LovingLiu
-    */
-
+    @ApiOperation(value = "新增女生",notes = "根据女生对象生成新的女生")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "cupSize",value = "罩杯", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "age",value = "年龄", required = false, dataType = "Integer"),
+            @ApiImplicitParam(name = "money", value = "资产",required = true, dataType = "Double")
+    })
     @PostMapping(value = "/girls")
-    /**
-     * @Desc 添加@Valid 表示验证的时对象,并将结果返回到 bindingResult
-     * @Author LovingLiu
-    */
     public ServerResponse<Girl> girlAdd(@Valid Girl girl, BindingResult bindingResult) {
         if(bindingResult.hasErrors()){
             return ServerResponse.createByErrorMessage(bindingResult.getFieldError().getDefaultMessage());
@@ -52,7 +49,8 @@ public class GirlController {
         return ServerResponse.createBySuccess(girlRepository.save(girl));
     }
 
-    //查询一个女生
+    @ApiOperation(value = "查询女生",notes = "根据女生ID 查询详细信息")
+    @ApiImplicitParam(name = "id", value = "用户ID", required = true, dataType = "Long")
     @GetMapping(value = "/girls/{id}")
     public Girl girlFindOne(@PathVariable("id") Integer id) {
         return girlRepository.findById(id).orElse(null);
